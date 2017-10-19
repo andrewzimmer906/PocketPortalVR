@@ -14,9 +14,10 @@ To correctly use ARKit follow these steps.
 1. Import the [Unity ARKit Plugin](https://assetstore.unity.com/packages/essentials/tutorial-projects/unity-arkit-plugin-92515).  Do this BEFORE importing Pocket Portal.
 2. Import `Pocket Portal`
 3. Open the ARKit Demo scene in `Pocket Portal/Demo/Scenes`
-4. Build and run the demo using the iOS target. (Make sure to add open scenes).
-5. Run your project on an ARKit supported device (A9 / A10 processor, iPhone 6s and up).
-6. Move your device around slowly to detect the ground plane. Once it's detected you can tap to place the portal & other dimesion at the correct location for your demo.
+4. Open `Window -> Portal State Manager` and switch to `ARKit (Apple Only)`
+5. Build and run the demo using the iOS target. (Make sure to add open scenes).
+7. Run your project on an ARKit supported device (A9 / A10 processor, iPhone 6s and up).
+8. Move your device around slowly to detect the ground plane. Once it's detected you can tap to place the portal & other dimesion at the correct location for your demo.
 
 __Note:__ ARKit uses a greenscreen to composite the real world at the far camera plane, this means that **skyboxes are not currently supported**.  My best advice is to use a "fake" skybox like in the ARKit demo scene as a work around.  A 360 video sphere works too!
 
