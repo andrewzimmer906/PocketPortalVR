@@ -95,7 +95,11 @@ public class Portal : MonoBehaviour
 		#if USES_OPEN_VR
 		Debug.Log("This build is set up to run with Open VR (Gear VR). To enable another headset or run without VR please edit your settings in Window -> Portal State Manager.");
 		#else
-		Debug.Log("This build is set up to run without VR (or for ARKit). To enable VR support please edit your settings in Window -> Portal State Manager.");
+		#if USES_AR_KIT
+		Debug.Log("This build is set up to with ARKit. Please make sure to also import the Unity ARKit Plugin from the Asset Store.");
+		#else
+		Debug.Log("This build is set up to run without VR or ARKit. To enable VR / AR support please edit your settings in Window -> Portal State Manager.");
+#endif
 #endif
 #endif
 
@@ -139,8 +143,8 @@ public class Portal : MonoBehaviour
 
 			#if USES_AR_KIT
 			if (mainCamera.GetComponent<UnityARVideo> ()) {
-				renderCam.gameObject.AddComponent<UnityARVideo> ();
-				renderCam.gameObject.GetComponent<UnityARVideo> ().m_ClearMaterial = mainCamera.GetComponent<UnityARVideo> ().m_ClearMaterial;
+				ARKitCameraRender component = renderCam.gameObject.AddComponent<ARKitCameraRender> ();
+				component.m_ClearMaterial = mainCamera.GetComponent<UnityARVideo> ().m_ClearMaterial;
 			}
 			#endif
 
