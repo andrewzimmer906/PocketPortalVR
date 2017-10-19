@@ -108,14 +108,36 @@ The portal code works in both normal and stereo (VR) camera modes. If you are us
 
 NOTE: Make sure to add a skybox component to your main camera if you want to define custom skyboxes for different dimensions.
 
-## Getting ready for Gear VR
+## Getting ready for Open VR
 
-The portal code works in both normal and stereo (VR) camera modes. If you are using Gear VR setup is identical to above with a couple of additional steps.
+The portal code works in both normal and stereo (VR) camera modes. If you are using Gear VR (or Rift) setup is identical to above with a couple of additional steps.
 
 1. Make sure to use the 'CenterEyeAnchor' camera as your main camera in the portal "Main Camera' variable.
 2. Add the "GearCameraRenderInfo" to your 'CenterEyeAnchor' camera.
 3. Add the "GearGrabObject" component to your 'CenterEyeAnchor' camera.
 4. Add a skybox to your 'CenterEyeAnchor' camera.
+
+NOTE: Make sure to add a skybox component to your main camera if you want to define custom skyboxes for different dimensions.
+
+## Using VRTK Kit
+
+VRTK Kit allows you to quickly swap between Steam VR and the OpenVR frameworks.  Steam VR works on Vive and Rift, while OpenVR (Occulus Utilities) are Rift only.
+
+1. Open the demo scene `VRTKKit demo`.
+2. Load your preferred framework and make sure it shows up correctly in the VRTK_SDK Manager.
+3. Tag your controllers `[VRTK_Scripts]/LeftController` and `[VRTK_Scripts]/RightController` and set that tag in the "Ignore Rigidbody Tag" if you'd like to manipulate your portal with touch controllers. This will keep the portal from deforming away from your controllers.
+
+NOTE: You may need to reimport the `[VRTK_SDK MANAGER]` to ensure that your scene runs correctly. Make very sure to follow the steps below if this is the case.
+
+#### STEAM VR
+4. Make sure to set the Portal `MainCamera` to the `eyes` camera inside of SteamVR.
+5. Add a skybox to your eyes camera.
+
+#### OPEN VR
+4. Add the "GearCameraRenderInfo" to your `CenterEyeAnchor` camera inside of OcculusVR.
+5. Make sure to set the Portal `MainCamera` to the `CenterEyeAnchor` inside of OcculusVR.
+6. Add a skybox to your eyes camera.
+
 
 NOTE: Make sure to add a skybox component to your main camera if you want to define custom skyboxes for different dimensions.
 
