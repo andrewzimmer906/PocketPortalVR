@@ -90,10 +90,10 @@ public class Portal : MonoBehaviour
 
 	void Awake() {
 		#if USES_STEAM_VR
-		Debug.Log("This build is set up to run with Steam VR (Vive). To enable another headset or run without VR please edit your settings in Window -> Portal State Manager.");
+		Debug.Log("This build is set up to run with Steam VR (Vive / Rift). To enable another headset or run without VR please edit your settings in Window -> Portal State Manager.");
 		#else
 		#if USES_OPEN_VR
-		Debug.Log("This build is set up to run with Open VR (Gear VR). To enable another headset or run without VR please edit your settings in Window -> Portal State Manager.");
+		Debug.Log("This build is set up to run with Open VR (Rift / Gear VR). To enable another headset or run without VR please edit your settings in Window -> Portal State Manager.");
 		#else
 		#if USES_AR_KIT
 		Debug.Log("This build is set up to with ARKit. Please make sure to also import the Unity ARKit Plugin from the Asset Store.");
@@ -143,6 +143,7 @@ public class Portal : MonoBehaviour
 
 			#if USES_AR_KIT
 			if (mainCamera.GetComponent<UnityARVideo> ()) {
+				renderCam.clearFlags = CameraClearFlags.SolidColor;
 				ARKitCameraRender component = renderCam.gameObject.AddComponent<ARKitCameraRender> ();
 				component.m_ClearMaterial = mainCamera.GetComponent<UnityARVideo> ().m_ClearMaterial;
 			}
@@ -150,7 +151,6 @@ public class Portal : MonoBehaviour
 
 			renderCam.name = gameObject.name + " render camera";
 			renderCam.tag = "Untagged";
-			renderCam.clearFlags = CameraClearFlags.SolidColor;
 
 			if (renderCam.GetComponent<Skybox> ()) {
 				camSkybox = renderCam.GetComponent<Skybox> ();	
@@ -248,12 +248,12 @@ public class Portal : MonoBehaviour
 		rightPosition = m.MultiplyPoint(-offset);
 		leftPosition = m.MultiplyPoint(offset);
 
-
 		RenderPlane(renderCam, leftTexture, leftPosition, InputTracking.GetLocalRotation(VRNode.LeftEye), camera.projectionMatrix);
 		meshRenderer.material.SetTexture("_LeftTex", leftTexture);
 
 		RenderPlane(renderCam, rightTexture, rightPosition, InputTracking.GetLocalRotation(VRNode.RightEye), camera.projectionMatrix);
 		meshRenderer.material.SetTexture("_RightTex", rightTexture);
+
 #endif
 	}
 
@@ -399,8 +399,8 @@ public class Portal : MonoBehaviour
 
 	private void SwitchDimensions ()
 	{
-        DimensionChanger.SwitchCameraRender (mainCamera, FromDimension ().layer, ToDimension ().layer, ToDimension ().customSkybox);
-        DimensionChanger.SwitchDimensions (mainCamera.gameObject, FromDimension (), ToDimension ());
+		DimensionChanger.SwitchCameraRender (this.mainCamera, FromDimension ().layer, ToDimension ().layer, ToDimension ().customSkybox);
+		DimensionChanger.SwitchDimensions (this.mainCamera.gameObject, FromDimension (), ToDimension ());
 		ToDimension ().SwitchConnectingPortals ();
 	}
 

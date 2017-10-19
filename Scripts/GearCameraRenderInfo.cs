@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class GearCameraRenderInfo : MonoBehaviour {
 #if USES_OPEN_VR
-    private bool isLeftEye = true;
+    public bool isLeftEye = true;
 
     /// <summary>
     ///  called (once per eye)
