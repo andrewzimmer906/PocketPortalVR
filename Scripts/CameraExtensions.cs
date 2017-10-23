@@ -16,10 +16,7 @@ public static class CameraExtensions {
 		if (camera.GetComponent<FlareLayer> ()) {
 			MonoBehaviour.Destroy (camera.GetComponent<FlareLayer> ());
 		}
-		if (camera.GetComponent<GUILayer> ()) {
-			MonoBehaviour.Destroy (camera.GetComponent<GUILayer> ());
-		}
-
+	
 		// This keeps AR Tracking from getting buggy
 		/*
 		foreach (Component component in camera.GetComponents<Component>()) {
