@@ -12,13 +12,18 @@ public class Dimension : MonoBehaviour {
 	[HideInInspector]
 	public int layer;
 
+	[Tooltip("This designates this dimension as the original dimension from which the experience will start.")]
 	public bool initialWorld = false;
-
+	[Tooltip("This forces the Dimension to only affect the layers during rendering (thus keeping things like raycasting intact). Warning: This will break the automatic physics adjustment that keeps you from hitting things in other dimensions.")]
+	public bool forceKeepInitialLayers = false;
+	
 	[HideInInspector]
 	public List<Portal> connectedPortals;
 
 	[HideInInspector]
 	public Camera cam;
+
+	private Dictionary<int, int> layerSwitchedChildren;
 
     private bool mainCameraNeedsSetup = true;
 
@@ -26,20 +31,22 @@ public class Dimension : MonoBehaviour {
 		connectedPortals = new List<Portal> ();
 
 		layer = LayerManager.Instance ().CreateLayer (gameObject.name);	
+		LayerManager.definedDimensions.Add (this);
+
 		gameObject.layer = layer;
 
 		int defaultLayer = LayerMask.NameToLayer("Default");
-        Transform[] childrenTransforms = gameObject.GetComponentsInChildren<Transform>();
-        foreach (Transform t in childrenTransforms)
-        {
-            t.gameObject.layer = layer;
-			if (t.gameObject.GetComponent<Light> ()) {
-				Light light = t.gameObject.GetComponent<Light> ();
-				light.cullingMask = defaultLayer;
-				light.cullingMask |= 1 << layer;
-
-			}		
-        }
+		if (!this.forceKeepInitialLayers) {
+			Transform[] childrenTransforms = gameObject.GetComponentsInChildren<Transform> ();
+			foreach (Transform t in childrenTransforms) {
+				t.gameObject.layer = layer;
+				if (t.gameObject.GetComponent<Light> ()) {
+					Light light = t.gameObject.GetComponent<Light> ();
+					light.cullingMask = defaultLayer;
+					light.cullingMask |= 1 << layer;
+				}		
+			}
+		}
 			
         foreach (Camera camera in Camera.allCameras) {
             if (this.initialWorld)
@@ -115,4 +122,40 @@ public class Dimension : MonoBehaviour {
             }
         }
     }
+
+
+	// Handle layer switching during rendering if needed
+	public void PreRender() {
+		if (!forceKeepInitialLayers)
+			return;
+
+		if (layerSwitchedChildren == null) {
+			layerSwitchedChildren = new Dictionary<int, int> ();
+		}
+
+		layerSwitchedChildren.Clear ();
+
+		int defaultLayer = LayerMask.NameToLayer("Default");
+		Transform[] childrenTransforms = gameObject.GetComponentsInChildren<Transform> ();
+		foreach (Transform t in childrenTransforms) {
+			layerSwitchedChildren.Add (t.gameObject.GetInstanceID (), t.gameObject.layer);
+			t.gameObject.layer = layer;
+			if (t.gameObject.GetComponent<Light> ()) {
+				Light light = t.gameObject.GetComponent<Light> ();
+				light.cullingMask = defaultLayer;
+				light.cullingMask |= 1 << layer;
+			}		
+		}
+	}
+
+	public void PostRender() {
+		if (!forceKeepInitialLayers)
+			return;
+
+		Transform[] childrenTransforms = gameObject.GetComponentsInChildren<Transform> ();
+		foreach (Transform t in childrenTransforms) {
+			int layer = layerSwitchedChildren [t.gameObject.GetInstanceID ()];
+			t.gameObject.layer = layer;
+		}
+	}
 }

@@ -1,3 +1,6 @@
+# Get the most up to date documentation here
+[Documentation](https://docs.google.com/document/d/12Xsh5DVseKkccc0v0BIWNQEPooZdKWDbotQck1QOvF0/edit?usp=sharing)
+
 # Important! Using the demo scenes
 The demo scenes use external libraries to enable basic movement controls, integrated VR rendering, and ARKit support. 
 

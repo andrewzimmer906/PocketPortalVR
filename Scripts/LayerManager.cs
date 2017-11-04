@@ -10,6 +10,8 @@ public class LayerManager {
 	private static LayerManager instance = null;  
 
 	public List<string> definedLayers;
+	public static List<Dimension> definedDimensions = new List<Dimension> ();
+
 	private static int totalLayerNum = 31;
 
 	public static LayerManager Instance() {
@@ -33,6 +35,4 @@ public class LayerManager {
 
 		return totalLayerNum - definedLayers.Count;
 	}
-
-
 }

@@ -128,6 +128,10 @@ public class Portal : MonoBehaviour
 
 		Vector3 convertedPoint = transform.InverseTransformPoint (mainCamera.transform.position);
 		triggerZDirection = (convertedPoint.z > 0);
+
+		if (!mainCamera.GetComponent<MainCameraLayerManager> ()) {
+			mainCamera.gameObject.AddComponent<MainCameraLayerManager> ();  // this allows us to alter layers before / after a render!
+		}
 	}
 
 	/* Rendering and Display */
