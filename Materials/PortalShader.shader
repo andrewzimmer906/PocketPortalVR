@@ -1,9 +1,7 @@
-﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
-
 Shader "Portals/PortalShader"
 {
 	Properties
-	{		
+	{
 	 _LeftTex("left tex", 2D) = "white" {}
 	 _RightTex("right tex", 2D) = "white" {}
 	 [Toggle] _RecursiveRender("recursive render", Float) = 0
@@ -19,13 +17,16 @@ Shader "Portals/PortalShader"
 			#pragma vertex vert
 			#pragma fragment frag
 
+			// make fog work
+			#pragma multi_compile_fog
+
 			// user defined variables
 			uniform fixed _RecursiveRender;
 
 			/// which eye we are rendering. 0 == left, 1 == right
 			uniform int RenderingEye;
 			uniform int OpenVRRender;
-			
+
 
 			sampler2D _LeftTex;
 
@@ -42,6 +43,7 @@ Shader "Portals/PortalShader"
 			struct vertexOutput {
 				half4 pos : SV_POSITION;
 				half4 screenPos : TEXCOORD2;
+				UNITY_FOG_COORDS(1)
 			};
 
 			// Same as standard ComputeScreenPos() except that it doesn't call TransformStereoScreenSpaceTex()
@@ -65,6 +67,7 @@ Shader "Portals/PortalShader"
 
 				o.pos = UnityObjectToClipPos(v.vertex);
 				o.screenPos = ComputeScreenPosIgnoreStereo(o.pos);
+				UNITY_TRANSFER_FOG(o,o.pos);
 
 				return o;
 			}
@@ -84,12 +87,17 @@ Shader "Portals/PortalShader"
 				leftEye = RenderingEye;
 			}
 
+			fixed4 col;
 			if (leftEye || _RecursiveRender == 1) {
-				return tex2D(_LeftTex, screenUV);// * float4(0, 0, 1, 1);
+				col = tex2D(_LeftTex, screenUV);// * float4(0, 0, 1, 1);
 			}
 			else {
-				return tex2D(_RightTex, screenUV);// * float4(1,1,0,1);
+				col = tex2D(_RightTex, screenUV);// * float4(1,1,0,1);
 			}
+
+			// apply fog
+			UNITY_APPLY_FOG(i.fogCoord, col);
+			return col;
 		}
 
 			ENDCG
