@@ -35,10 +35,12 @@ public class DefineManager : EditorWindow
 
 		if (csDefines.Contains ("USES_AR_KIT")) {
 			selection = 1;
-		} else if (csDefines.Contains ("USES_STEAM_VR")) {
+		} else if (csDefines.Contains ("USES_AR_CORE")) {
 			selection = 2;
-		} else if (csDefines.Contains ("USES_OPEN_VR")) {
+		} else if (csDefines.Contains ("USES_STEAM_VR")) {
 			selection = 3;
+		} else if (csDefines.Contains ("USES_OPEN_VR")) {
+			selection = 4;
 		} else {
 			selection = 0;
 		}
@@ -49,15 +51,17 @@ public class DefineManager : EditorWindow
 		GUILayout.BeginVertical ();
 		GUILayout.Label("VR Portal Settings", EditorStyles.boldLabel);
 
-		var text = new string[] { "Mono Rendering (Non-VR, Hololens)", "ARKit (Apple only)", "Steam VR (Vive / Rift)", "Open VR (Rift / Gear VR)" };
+		var text = new string[] { "Mono Rendering (Non-VR, Hololens)", "ARKit (Apple only)", "ARCore (Android Devices)", "Steam VR (Vive / Rift)", "Open VR (Rift / Gear VR)" };
 		selection = GUILayout.SelectionGrid(selection, text, 1, EditorStyles.radioButton);
 
 		csDefines.Clear ();
 		if (selection == 1) {  // arkit
 			csDefines.Add ("USES_AR_KIT");
 		} else if (selection == 2) { //steam vr
+			csDefines.Add ("USES_AR_CORE");
+		} else if (selection == 3) { //steam vr
 			csDefines.Add ("USES_STEAM_VR");
-		} else if (selection == 3) { // open vr
+		} else if (selection == 4) { // open vr
 			csDefines.Add ("USES_OPEN_VR");
 		}
 

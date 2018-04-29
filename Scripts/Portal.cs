@@ -34,12 +34,12 @@ public class Portal : MonoBehaviour
 
 	#if USES_STEAM_VR
 	[Tooltip("The Main Camera. On Vive this is [CameraRig] -> Camera (Head) -> Camera (Eye)")]
-	#else
-	#if USES_OPEN_VR
+	#elif USES_OPEN_VR
 	[Tooltip("The Main Camera. On Gear VR this is OVRCameraRig -> TrackingSpace -> CenterEyeAnchor")]
+	#elif USES_AR_CORE || USES_AR_KIT
+	[Tooltip("The Main Camera. For ARKit / ARCore this is the camera tagged as Main Camera with the appropriate scripts to render the real world camera feed.")]
 	#else
 	[Tooltip("The Main Camera. For FPS this is FPSController -> FirstPersonCharacter")]
-	#endif
 	#endif
 	public Camera mainCamera;
 
@@ -61,11 +61,14 @@ public class Portal : MonoBehaviour
 	[Tooltip("Oblique Projection clips the camera exactly to the portal rectangle. This is really good if you've got nearby objects. Unfortunately, it also screws with the skybox on Gear VR.")]
 	public bool enableObliqueProjection = false;
 
+	// Test against this bool to see if you are currently inside of the starting dimension, or the ending dimension for the portal.
+	public bool dimensionSwitched { get; private set; }
+
 	[TextArea]
 	[Tooltip(" ")]
 	public string Notes = "Hover over each variable to get tooltips with more information on what they do. Quick Tip: " +
 		"Don't set the visible mask to Everything. Select each option you want to be always visible.";
-	
+
 	private float minimumDeformRangeSquared;
 	private bool isDeforming = false;
 
@@ -73,7 +76,6 @@ public class Portal : MonoBehaviour
 	private MeshFilter meshFilter;
 	private MeshDeformer meshDeformer;
 
-	private bool dimensionSwitched;
 	private bool triggerZDirection;
 
 	private List<RigidbodyCollider> colliders = new List<RigidbodyCollider> ();
@@ -91,17 +93,15 @@ public class Portal : MonoBehaviour
 	void Awake() {
 		#if USES_STEAM_VR
 		Debug.Log("This build is set up to run with Steam VR (Vive / Rift). To enable another headset or run without VR please edit your settings in Window -> Portal State Manager.");
-		#else
-		#if USES_OPEN_VR
+		#elif USES_OPEN_VR
 		Debug.Log("This build is set up to run with Open VR (Rift / Gear VR). To enable another headset or run without VR please edit your settings in Window -> Portal State Manager.");
-		#else
-		#if USES_AR_KIT
+		#elif USES_AR_KIT
 		Debug.Log("This build is set up to with ARKit. Please make sure to also import the Unity ARKit Plugin from the Asset Store.");
+		#elif USES_AR_CORE
+		Debug.Log("This build is set up to with ARCore. Please make sure to follow the instructions here : https://developers.google.com/ar/develop/unity/quickstart to get your environment set up for ARCore.");
 		#else
 		Debug.Log("This build is set up to run without VR or ARKit. To enable VR / AR support please edit your settings in Window -> Portal State Manager.");
-#endif
-#endif
-#endif
+		#endif
 
         #if USES_OPEN_VR
         Shader.SetGlobalInt("OpenVRRender", 1);
@@ -134,7 +134,38 @@ public class Portal : MonoBehaviour
 		}
 	}
 
-	/* Rendering and Display */
+	private void OnDestroy()
+	{
+		if (renderCam != null)
+		{
+			Destroy(renderCam.gameObject);
+			renderCam = null;
+		}
+
+		if (leftTexture != null) {
+			Destroy (leftTexture);
+		}
+		#if USES_STEAM_VR || USES_OPEN_VR
+		if (rightTexture != null) {
+			Destroy (rightTexture);
+		}
+		#endif
+	}
+
+	/// <summary>
+	///  Call this method to instantly switch between dimensions. This will switch the Main Character (IE: the main camera) as well.
+	/// </summary>
+	public void SwitchDimensions ()
+	{
+		DimensionChanger.SwitchCameraRender (this.mainCamera, FromDimension ().layer, ToDimension ().layer, ToDimension ().customSkybox);
+		DimensionChanger.SwitchDimensions (this.mainCamera.gameObject, FromDimension (), ToDimension ());
+		ToDimension ().SwitchConnectingPortals ();
+	}
+
+	// ---------------------------------
+	// Rendering and Display
+	// ---------------------------------
+
 	void OnWillRenderObject () {
 		// Create the textures and camera if they don't exist.
 		if (!leftTexture) {
@@ -145,13 +176,7 @@ public class Portal : MonoBehaviour
 #endif
 			renderCam = new GameObject (gameObject.name + " render camera", typeof(Camera), typeof(Skybox)).GetComponent<Camera> ();
 
-			#if USES_AR_KIT
-			if (mainCamera.GetComponent<UnityARVideo> ()) {
-				renderCam.clearFlags = CameraClearFlags.SolidColor;
-				ARKitCameraRender component = renderCam.gameObject.AddComponent<ARKitCameraRender> ();
-				component.m_ClearMaterial = mainCamera.GetComponent<UnityARVideo> ().m_ClearMaterial;
-			}
-			#endif
+			SetupRenderCameraForAR ();  // this will get the camera ready to render for ARKit or ARCore
 
 			renderCam.name = gameObject.name + " render camera";
 			renderCam.tag = "Untagged";
@@ -165,13 +190,6 @@ public class Portal : MonoBehaviour
 
 			CameraExtensions.ClearCameraComponents (renderCam.GetComponent<Camera>());
 
-            // remove child objects to better support VRTKKit
-            /*foreach(Transform child in renderCam.transform)
-            {
-                Destroy(child.gameObject);
-            }
-			*/
-
 			renderCam.hideFlags = HideFlags.HideInHierarchy;
 			renderCam.enabled = false;
 		}
@@ -182,6 +200,30 @@ public class Portal : MonoBehaviour
 
 		meshRenderer.material.SetFloat ("_RecursiveRender", (gameObject.layer != Camera.current.gameObject.layer) ? 1 : 0);
 		RenderPortal (Camera.current);
+	}
+
+	private void SetupRenderCameraForAR() {
+		#if USES_AR_KIT
+		if (mainCamera.GetComponent<UnityARVideo> ()) {
+		renderCam.clearFlags = CameraClearFlags.SolidColor;
+		ARKitCameraRender component = renderCam.gameObject.AddComponent<ARKitCameraRender> ();
+		component.m_ClearMaterial = mainCamera.GetComponent<UnityARVideo> ().m_ClearMaterial;
+		}
+		#endif
+
+
+		#if USES_AR_CORE
+		if (mainCamera.GetComponent<GoogleARCore.ARCoreBackgroundRenderer> ()) {
+			renderCam.clearFlags = CameraClearFlags.SolidColor;
+			GoogleARCore.ARCoreBackgroundRenderer component = renderCam.gameObject.AddComponent<GoogleARCore.ARCoreBackgroundRenderer> ();
+			component.BackgroundMaterial = mainCamera.GetComponent<GoogleARCore.ARCoreBackgroundRenderer> ().BackgroundMaterial;
+
+			// This sucks, the first enabling fails automatically because there isn't a background material.  By doing this we still
+			// get an error on the log, but it at least works.. :/
+			component.enabled = false;
+			component.enabled = true;
+		}
+		#endif
 	}
 
 	private void RenderPortal (Camera camera)
@@ -365,7 +407,10 @@ public class Portal : MonoBehaviour
 	}
 #endif
 
-	/* Main Character Moving Through Portal */
+	// ---------------------------------
+	// Portal Dimension Switching and Deformation
+	// ---------------------------------
+
 	void Update ()
 	{
 		if (mainCamera.gameObject.layer != this.FromDimension ().layer) {
@@ -399,13 +444,6 @@ public class Portal : MonoBehaviour
 
 		meshDeformer.AddDeformingForce (otherTransform.position, deformPower, triggerZDirection);
 		isDeforming = true;
-	}
-
-	private void SwitchDimensions ()
-	{
-		DimensionChanger.SwitchCameraRender (this.mainCamera, FromDimension ().layer, ToDimension ().layer, ToDimension ().customSkybox);
-		DimensionChanger.SwitchDimensions (this.mainCamera.gameObject, FromDimension (), ToDimension ());
-		ToDimension ().SwitchConnectingPortals ();
 	}
 
 	public void SwitchPortalDimensions ()
