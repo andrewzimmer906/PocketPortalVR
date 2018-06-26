@@ -10,6 +10,11 @@ public static class DimensionChanger {
 	public static void SwitchDimensions(GameObject obj, Dimension fromDimension, Dimension toDimension) {
 		obj.layer = toDimension.layer;
 
+        // Move over all visible children as well
+        foreach(MeshRenderer childRenderer in obj.GetComponentsInChildren<MeshRenderer>()) {
+            childRenderer.gameObject.layer = toDimension.layer;
+        }
+
 		// If this is an FPS controller then make sure it goes through too.
 		Transform parent = obj.transform.parent;
 		if(parent != null && parent.GetComponent<CharacterController>()) {
