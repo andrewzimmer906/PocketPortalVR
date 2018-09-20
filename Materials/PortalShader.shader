@@ -66,7 +66,10 @@ Shader "Portals/PortalShader"
 				vertexOutput o;
 
 				o.pos = UnityObjectToClipPos(v.vertex);
-				o.screenPos = ComputeScreenPosIgnoreStereo(o.pos);
+				//float2 uv = (o.pos.xy / o.pos.w) * 0.5f + 1;
+				//o.screenPos = float4(uv, 0, 1);
+				//o.screenPos = (o.pos.xy / o.pos.w) * 0.5f + 1;
+				o.screenPos = ComputeScreenPos(o.pos); //ComputeScreenPos(o.pos);
 				UNITY_TRANSFER_FOG(o,o.pos);
 
 				return o;
@@ -89,7 +92,7 @@ Shader "Portals/PortalShader"
 
 			fixed4 col;
 			if (leftEye || _RecursiveRender == 1) {
-				col = tex2D(_LeftTex, screenUV);// * float4(0, 0, 1, 1);
+				col = tex2D(_LeftTex, screenUV);//  * float4(0, 0, 1, 1);
 			}
 			else {
 				col = tex2D(_RightTex, screenUV);// * float4(1,1,0,1);

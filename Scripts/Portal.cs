@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.VR;
+using UnityEngine.Assertions;
 
 #if USES_AR_KIT
 using UnityEngine.XR.iOS;
@@ -31,17 +32,6 @@ public class Portal : MonoBehaviour
 
 	[Tooltip("The \"To\" dimension for this portal.")]
 	public Dimension dimension2;
-
-	#if USES_STEAM_VR
-	[Tooltip("The Main Camera. On Vive this is [CameraRig] -> Camera (Head) -> Camera (Eye)")]
-	#elif USES_OPEN_VR
-	[Tooltip("The Main Camera. On Gear VR this is OVRCameraRig -> TrackingSpace -> CenterEyeAnchor")]
-	#elif USES_AR_CORE || USES_AR_KIT
-	[Tooltip("The Main Camera. For ARKit / ARCore this is the camera tagged as Main Camera with the appropriate scripts to render the real world camera feed.")]
-	#else
-	[Tooltip("The Main Camera. For FPS this is FPSController -> FirstPersonCharacter")]
-	#endif
-	public Camera mainCamera;
 
     [Tooltip("Increase this value to increase quality. Lower this value to increase performance. Default is 1.")]
     public float renderQuality = 1f;
@@ -69,7 +59,11 @@ public class Portal : MonoBehaviour
 	public string Notes = "Hover over each variable to get tooltips with more information on what they do. Quick Tip: " +
 		"Don't set the visible mask to Everything. Select each option you want to be always visible.";
 
-	private float minimumDeformRangeSquared;
+
+    private Camera mainCamera;
+    private Camera rightCamera;
+
+    private float minimumDeformRangeSquared;
 	private bool isDeforming = false;
 
 	private Renderer meshRenderer;
@@ -116,7 +110,17 @@ public class Portal : MonoBehaviour
 		meshFilter = GetComponent<MeshFilter> ();
 		meshDeformer = GetComponent<MeshDeformer> ();
 
-		this.gameObject.layer = FromDimension ().layer;
+#if USES_OPEN_VR
+        OVRCameraRig rig = GameObject.FindObjectOfType<OVRCameraRig>();
+        Assert.IsNotNull(rig, "To use Open VR Portal mode you need to have an OVRCameraRig in your scene.");
+        this.mainCamera = rig.leftEyeCamera;
+        this.rightCamera = rig.rightEyeCamera;
+#else
+        this.mainCamera = Camera.main;
+#endif
+        Assert.IsNotNull(this.mainCamera, "Pocket Portal could not find a main camera in your scene.");
+
+        this.gameObject.layer = FromDimension ().layer;
 
 		dimension1.connectedPortals.Add (this);
 		dimension2.connectedPortals.Add (this);
@@ -129,7 +133,7 @@ public class Portal : MonoBehaviour
 		Vector3 convertedPoint = transform.InverseTransformPoint (mainCamera.transform.position);
 		triggerZDirection = (convertedPoint.z > 0);
 
-		if (!mainCamera.GetComponent<MainCameraLayerManager> ()) {
+        if (!mainCamera.GetComponent<MainCameraLayerManager> ()) {
 			mainCamera.gameObject.AddComponent<MainCameraLayerManager> ();  // this allows us to alter layers before / after a render!
 		}
 	}
@@ -159,7 +163,13 @@ public class Portal : MonoBehaviour
 	{
 		DimensionChanger.SwitchCameraRender (this.mainCamera, FromDimension ().layer, ToDimension ().layer, ToDimension ().customSkybox);
 		DimensionChanger.SwitchDimensions (this.mainCamera.gameObject, FromDimension (), ToDimension ());
-		ToDimension ().SwitchConnectingPortals ();
+
+        if (this.rightCamera != null) {
+            DimensionChanger.SwitchCameraRender(this.rightCamera, FromDimension().layer, ToDimension().layer, ToDimension().customSkybox);
+            DimensionChanger.SwitchDimensions(this.rightCamera.gameObject, FromDimension(), ToDimension());
+        }
+
+        ToDimension ().SwitchConnectingPortals ();
 	}
 
 	// ---------------------------------
@@ -286,18 +296,59 @@ public class Portal : MonoBehaviour
 
 	private void RenderOpenVR(Camera camera) {
 #if USES_OPEN_VR
-		Vector3 leftPosition = Quaternion.Inverse(InputTracking.GetLocalRotation(VRNode.LeftEye)) * InputTracking.GetLocalPosition(VRNode.LeftEye);
-		Vector3 rightPosition = Quaternion.Inverse(InputTracking.GetLocalRotation(VRNode.RightEye)) * InputTracking.GetLocalPosition(VRNode.RightEye);
-		Vector3 offset = (leftPosition - rightPosition) * 0.5f;
+        Transform trackingSpace = GameObject.FindObjectOfType<OVRCameraRig>().trackingSpace;
 
-		Matrix4x4 m = camera.cameraToWorldMatrix;
-		rightPosition = m.MultiplyPoint(-offset);
-		leftPosition = m.MultiplyPoint(offset);
+        Vector3 leftPosition = trackingSpace.TransformPoint(UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.LeftEye));
+        Vector3 rightPosition = trackingSpace.TransformPoint(UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.RightEye));
 
-		RenderPlane(renderCam, leftTexture, leftPosition, InputTracking.GetLocalRotation(VRNode.LeftEye), camera.projectionMatrix);
+        Quaternion leftRot = trackingSpace.transform.rotation * UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.LeftEye);
+        Quaternion rightRot = trackingSpace.transform.rotation * UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.RightEye);
+        //Quaternion.Inverse(UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.LeftEye)) * );
+		//Vector3 rightPosition = Quaternion.Inverse(UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.RightEye)) * UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.RightEye);
+		//Vector3 offset = (leftPosition - rightPosition) * 0.5f;
+
+		//Matrix4x4 m = camera.cameraToWorldMatrix;
+        //leftPosition = trackingSpace.TransformPoint(offset);  //m.MultiplyPoint(offset);
+        //rightPosition = trackingSpace.TransformPoint(-offset); // m.MultiplyPoint(-offset);
+
+        
+        Matrix4x4 forcedProjectionMatrix = 
+            new Matrix4x4( new Vector4(1.19034f,   0,         0,         0),
+                           new Vector4(0,          0.99979f,  0,         0),
+                           new Vector4(-0.14859f, -0.11069f, -1.00060f, -1),
+                           new Vector4(0,          0,        -0.60018f,  0));
+        
+
+        /*Matrix4x4 forcedProjectionMatrix =
+                   new Matrix4x4(
+                        new Vector4(1.19034f, 0, - 0.14859f, 0),
+                        new Vector4(0, 0.99979f, -0.11069f, 0),
+                        new Vector4(0, 0, -1.00060f, -0.60018f),
+                        new Vector4(0, 0, -1, 0));
+        */
+        //leftPosition = m.MultiplyPoint(offset);
+        //rightPosition = m.MultiplyPoint(-offset);
+
+        //leftPosition = camera.transform.TransformPoint(offset);
+        //rightPosition = camera.transform.TransformPoint(-offset);
+
+        /*
+        Debug.Log("Camera : " + camera.name);
+        Debug.Log("Position : " + camera.transform.position);
+        Debug.Log("Rotation : " + camera.transform.rotation);
+        Debug.Log("World2Camera : " + camera.worldToCameraMatrix.ToString());
+        Debug.Log("Project : " + camera.projectionMatrix.ToString());
+        */
+        // Debug.Log("forced project : " + forcedProjectionMatrix.ToString());
+
+
+        
+        //RenderPlane(renderCam, leftTexture, leftPosition, UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.LeftEye), camera.projectionMatrix);
+        RenderPlane(renderCam, leftTexture, leftPosition, leftRot, camera.projectionMatrix);
 		meshRenderer.material.SetTexture("_LeftTex", leftTexture);
 
-		RenderPlane(renderCam, rightTexture, rightPosition, InputTracking.GetLocalRotation(VRNode.RightEye), camera.projectionMatrix);
+		//RenderPlane(renderCam, rightTexture, rightPosition, UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.RightEye), camera.projectionMatrix);
+		RenderPlane(renderCam, rightTexture, rightPosition, rightRot, camera.projectionMatrix);
 		meshRenderer.material.SetTexture("_RightTex", rightTexture);
 
 #endif
