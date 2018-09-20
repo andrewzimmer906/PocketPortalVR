@@ -19,12 +19,6 @@ enum TriggerAxis
 	Z
 };
 
-class RigidbodyCollider
-{
-	public Collider collider;
-	public bool triggerZDirection;
-}
-
 public class Portal : MonoBehaviour
 {
 	[Tooltip("The \"From\" dimension for this portal.")]
@@ -72,7 +66,7 @@ public class Portal : MonoBehaviour
 
 	private bool triggerZDirection;
 
-	private List<RigidbodyCollider> colliders = new List<RigidbodyCollider> ();
+	private List<PortalTransitionObject> transitionObjects = new List<PortalTransitionObject> ();
 
 	// Rendering & VR Support
 	private Camera renderCam;
@@ -480,7 +474,9 @@ public class Portal : MonoBehaviour
 			isDeforming = false;
 			meshDeformer.ClearDeformingForce ();
 		}
-	}
+
+        CheckForTransitionObjects();
+    }
 
 	private void DeformPortalWithTransform (Transform otherTransform)
 	{
@@ -503,66 +499,59 @@ public class Portal : MonoBehaviour
 		gameObject.layer = FromDimension ().layer;
 	}
 
-	/* Objects with colliders */
-	void OnTriggerStay (Collider other)
-	{
-		RigidbodyCollider curCollider = null;
-		foreach (RigidbodyCollider col in colliders) {
-			if (col.collider == other) {
-				curCollider = col;
-				break;
-			}
-		}
+    // -----------------------------------------------
+    // Moving other objects through the portal
+    // -----------------------------------------------
 
-		if (curCollider != null) {
-			Vector3 convertedPoint = transform.InverseTransformPoint (other.transform.position);
-			if ((convertedPoint.z > 0) != curCollider.triggerZDirection) {
-				if (other.gameObject.layer == FromDimension ().layer) {
-					DimensionChanger.SwitchDimensions (other.gameObject, FromDimension (), ToDimension ());
-				} else {
-					DimensionChanger.SwitchDimensions (other.gameObject, ToDimension (), FromDimension ());
-				}
-			}
+    void CheckForTransitionObjects() {
+        Vector3 portalSize = meshFilter.mesh.bounds.size;
+        PortalTransitionObject[] objects = FindObjectsOfType<PortalTransitionObject>();
+        foreach(PortalTransitionObject obj in objects) {
+            bool shouldDeform =
+                (Mathf.Pow(transform.InverseTransformDirection(obj.transform.position - this.transform.position).z, 2) <= minimumDeformRangeSquared) && // z direction is close
+                Mathf.Abs(transform.InverseTransformDirection(obj.transform.position - this.transform.position).x) <= (portalSize.x * transform.lossyScale.x) / 2f &&
+                Mathf.Abs(transform.InverseTransformDirection(obj.transform.position - this.transform.position).y) <= (portalSize.y * transform.lossyScale.y) / 2f;
 
-			if (!isDeforming) { // don't deform if we are right up against it
-				Vector3 transformPosition = other.transform.position;
-				if (Mathf.Abs (convertedPoint.z) < maximumDeformRange) {
-					convertedPoint.z += triggerZDirection ? maximumDeformRange : -maximumDeformRange;
-					transformPosition = transform.TransformPoint (convertedPoint);
-				}
-				meshDeformer.AddDeformingForce (transformPosition, deformPower);
-			}
-		}
-	}
+            if (shouldDeform) {
+                HandleTransition(obj);
+            } else {
+                if (this.transitionObjects.Contains(obj)) {
+                    this.transitionObjects.Remove(obj);
+                    if (this.transitionObjects.Count == 0 && !isDeforming) {
+                        meshDeformer.ClearDeformingForce();
+                    }
+                }
+            }
+        }
+    }
 
-	void OnTriggerEnter (Collider other)
-	{
-		if (other.GetComponent<Rigidbody> () &&
-			CameraExtensions.CameraForObject (other.gameObject) != mainCamera &&
-			(ignoreRigidbodyTag == "" || !other.gameObject.CompareTag (ignoreRigidbodyTag))) {
-			RigidbodyCollider collider = new RigidbodyCollider ();
-			collider.collider = other;
-			collider.triggerZDirection = (transform.InverseTransformPoint (other.transform.position).z > 0);
-			colliders.Add (collider);
-		}
-	}
+    void HandleTransition(PortalTransitionObject transitionObject) {
+        if (!this.transitionObjects.Contains(transitionObject)) {
+            if (CameraExtensions.CameraForObject(transitionObject.gameObject) != mainCamera && (ignoreRigidbodyTag == "" || !transitionObject.gameObject.CompareTag(ignoreRigidbodyTag))) {
+                transitionObject.triggerZDirection = (transform.InverseTransformPoint(transitionObject.transform.position).z > 0);
+                this.transitionObjects.Add(transitionObject);
+            }
+        }
 
-	void OnTriggerExit (Collider other)
-	{
-		RigidbodyCollider curCollider = null;
-		foreach (RigidbodyCollider col in colliders) {
-			if (col.collider == other) {
-				curCollider = col;
-				break;
-			}
-		}
-		if (curCollider != null) {
-			colliders.Remove (curCollider);
-			if (colliders.Count == 0 && !isDeforming) {
-				meshDeformer.ClearDeformingForce ();
-			}
-		}
-	}
+        Vector3 convertedPoint = transform.InverseTransformPoint(transitionObject.transform.position);
+        if ((convertedPoint.z > 0) != transitionObject.triggerZDirection) {
+            if (transitionObject.gameObject.layer == FromDimension().layer) {
+                DimensionChanger.SwitchDimensions(transitionObject.gameObject, FromDimension(), ToDimension());
+            } else {
+                DimensionChanger.SwitchDimensions(transitionObject.gameObject, ToDimension(), FromDimension());
+            }
+            transitionObject.triggerZDirection = !transitionObject.triggerZDirection;
+        }
+
+        if (!isDeforming) { // Only deform if the main camera isn't deforming.
+            Vector3 transformPosition = transitionObject.transform.position;
+            if (Mathf.Abs(convertedPoint.z) < maximumDeformRange) {
+                convertedPoint.z += triggerZDirection ? maximumDeformRange : -maximumDeformRange;
+                transformPosition = transform.TransformPoint(convertedPoint);
+            }
+            meshDeformer.AddDeformingForce(transformPosition, deformPower);
+        }
+    }
 
 	/* Convenience */
 	public Dimension ToDimension ()

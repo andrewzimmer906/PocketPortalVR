@@ -23,6 +23,7 @@ GameObject:
   - component: {fileID: 135307819428400426}
   - component: {fileID: 23230784378493052}
   - component: {fileID: 54493661318669552}
+  - component: {fileID: 114629847302807586}
   m_Layer: 0
   m_Name: stone
   m_TagString: Untagged
@@ -52,9 +53,11 @@ MeshRenderer:
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
+  m_RenderingLayerMask: 4294967295
   m_Materials:
   - {fileID: 2100000, guid: a570c742c7ebe41f087a3b3f9817d169, type: 2}
   m_StaticBatchInfo:
@@ -67,6 +70,7 @@ MeshRenderer:
   m_PreserveUVs: 1
   m_IgnoreNormalsForChartDetection: 0
   m_ImportantGI: 0
+  m_StitchLightmapSeams: 0
   m_SelectedEditorRenderState: 3
   m_MinimumChartSize: 4
   m_AutoUVMaxDistance: 0.5
@@ -97,6 +101,18 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &114629847302807586
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1892524573229108}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e4432163429ec1d4ca08323dfc728ba1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  triggerZDirection: 0
 --- !u!135 &135307819428400426
 SphereCollider:
   m_ObjectHideFlags: 1
