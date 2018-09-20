@@ -51,7 +51,7 @@ public class DefineManager : EditorWindow
 		GUILayout.BeginVertical ();
 		GUILayout.Label("VR Portal Settings", EditorStyles.boldLabel);
 
-		var text = new string[] { "Mono Rendering (Non-VR, Hololens)", "ARKit (Apple only)", "ARCore (Android Devices)", "Steam VR (Vive / Rift)", "Open VR (Rift / Gear VR)" };
+		var text = new string[] { "Mono Rendering (Non-VR, Hololens)", "ARKit (Apple only)", "ARCore (Android Devices)", "Steam VR (Vive / Rift)", "Oculus SDK (Rift / Gear VR)" };
 		selection = GUILayout.SelectionGrid(selection, text, 1, EditorStyles.radioButton);
 
 		csDefines.Clear ();
