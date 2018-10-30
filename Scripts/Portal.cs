@@ -245,15 +245,15 @@ public class Portal : MonoBehaviour
 #if USES_STEAM_VR || USES_OPEN_VR
 		if (camera.stereoEnabled) {  // IE: If we're in VR
 
-            /* Open VR Special */
-	#if USES_STEAM_VR
+/* Open VR Special */
+#if USES_STEAM_VR
 			this.RenderSteamVR (camera);
-	#endif
+#endif
 
-	/* Gear VR Special */
-	#if USES_OPEN_VR
+/* Gear VR Special */
+#if USES_OPEN_VR
 			this.RenderOpenVR (camera);
-	#endif
+#endif
         }
         else {  // We're rendering in mono regardless
 			this.RenderMono (camera);
@@ -297,54 +297,12 @@ public class Portal : MonoBehaviour
 
         Quaternion leftRot = trackingSpace.transform.rotation * UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.LeftEye);
         Quaternion rightRot = trackingSpace.transform.rotation * UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.RightEye);
-        //Quaternion.Inverse(UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.LeftEye)) * );
-		//Vector3 rightPosition = Quaternion.Inverse(UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.RightEye)) * UnityEngine.XR.InputTracking.GetLocalPosition(UnityEngine.XR.XRNode.RightEye);
-		//Vector3 offset = (leftPosition - rightPosition) * 0.5f;
-
-		//Matrix4x4 m = camera.cameraToWorldMatrix;
-        //leftPosition = trackingSpace.TransformPoint(offset);  //m.MultiplyPoint(offset);
-        //rightPosition = trackingSpace.TransformPoint(-offset); // m.MultiplyPoint(-offset);
-
         
-        Matrix4x4 forcedProjectionMatrix = 
-            new Matrix4x4( new Vector4(1.19034f,   0,         0,         0),
-                           new Vector4(0,          0.99979f,  0,         0),
-                           new Vector4(-0.14859f, -0.11069f, -1.00060f, -1),
-                           new Vector4(0,          0,        -0.60018f,  0));
-        
-
-        /*Matrix4x4 forcedProjectionMatrix =
-                   new Matrix4x4(
-                        new Vector4(1.19034f, 0, - 0.14859f, 0),
-                        new Vector4(0, 0.99979f, -0.11069f, 0),
-                        new Vector4(0, 0, -1.00060f, -0.60018f),
-                        new Vector4(0, 0, -1, 0));
-        */
-        //leftPosition = m.MultiplyPoint(offset);
-        //rightPosition = m.MultiplyPoint(-offset);
-
-        //leftPosition = camera.transform.TransformPoint(offset);
-        //rightPosition = camera.transform.TransformPoint(-offset);
-
-        /*
-        Debug.Log("Camera : " + camera.name);
-        Debug.Log("Position : " + camera.transform.position);
-        Debug.Log("Rotation : " + camera.transform.rotation);
-        Debug.Log("World2Camera : " + camera.worldToCameraMatrix.ToString());
-        Debug.Log("Project : " + camera.projectionMatrix.ToString());
-        */
-        // Debug.Log("forced project : " + forcedProjectionMatrix.ToString());
-
-
-        
-        //RenderPlane(renderCam, leftTexture, leftPosition, UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.LeftEye), camera.projectionMatrix);
         RenderPlane(renderCam, leftTexture, leftPosition, leftRot, camera.projectionMatrix);
 		meshRenderer.material.SetTexture("_LeftTex", leftTexture);
 
-		//RenderPlane(renderCam, rightTexture, rightPosition, UnityEngine.XR.InputTracking.GetLocalRotation(UnityEngine.XR.XRNode.RightEye), camera.projectionMatrix);
 		RenderPlane(renderCam, rightTexture, rightPosition, rightRot, camera.projectionMatrix);
 		meshRenderer.material.SetTexture("_RightTex", rightTexture);
-
 #endif
 	}
 

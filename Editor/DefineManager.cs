@@ -33,17 +33,20 @@ public class DefineManager : EditorWindow
 	void OnEnable() {		
 		csDefines = ParseRspFile(CSHARP_PATH);
 
-		if (csDefines.Contains ("USES_AR_KIT")) {
-			selection = 1;
-		} else if (csDefines.Contains ("USES_AR_CORE")) {
-			selection = 2;
-		} else if (csDefines.Contains ("USES_STEAM_VR")) {
-			selection = 3;
-		} else if (csDefines.Contains ("USES_OPEN_VR")) {
-			selection = 4;
-		} else {
-			selection = 0;
-		}
+        if (csDefines.Contains("USES_AR_FOUNDATION")) {
+            selection = 1;
+        } else if (csDefines.Contains("USES_STEAM_VR")) {
+            selection = 2;
+        } else if (csDefines.Contains("USES_OPEN_VR")) {
+            selection = 3;
+        } else if (csDefines.Contains("USES_AR_KIT")) {
+            selection = 4;
+        } else if (csDefines.Contains("USES_AR_CORE")) {
+            selection = 5;
+        } else {
+            selection = 0;
+        }
+
 		oldSelection = selection;
 	}
 
@@ -51,21 +54,23 @@ public class DefineManager : EditorWindow
 		GUILayout.BeginVertical ();
 		GUILayout.Label("VR Portal Settings", EditorStyles.boldLabel);
 
-		var text = new string[] { "Mono Rendering (Non-VR, Hololens)", "ARKit (Apple only)", "ARCore (Android Devices)", "Steam VR (Vive / Rift)", "Oculus SDK (Rift / Gear VR)" };
+		var text = new string[] { "Mono Rendering (Non-VR, Hololens)", "AR Foundation (ARKit / ARCore)", "Steam VR (Vive / Rift)", "Oculus SDK (Rift / Gear VR)", "ARKit Plugin (Not Recommended)", "ARCore Plugin (Not Recommended)" };
 		selection = GUILayout.SelectionGrid(selection, text, 1, EditorStyles.radioButton);
 
 		csDefines.Clear ();
-		if (selection == 1) {  // arkit
-			csDefines.Add ("USES_AR_KIT");
+		if (selection == 1) {  // ar foundatation
+			csDefines.Add ("USES_AR_FOUNDATION");
 		} else if (selection == 2) { //steam vr
-			csDefines.Add ("USES_AR_CORE");
-		} else if (selection == 3) { //steam vr
 			csDefines.Add ("USES_STEAM_VR");
-		} else if (selection == 4) { // open vr
-			csDefines.Add ("USES_OPEN_VR");
-		}
+		} else if (selection == 3) { //open vr
+            csDefines.Add ("USES_OPEN_VR");
+		} else if (selection == 4) { // arkit plugin
+			csDefines.Add ("USES_AR_KIT");
+		} else if (selection == 5) { // arcore plugin
+            csDefines.Add("USES_AR_CORE");
+        }
 
-		WriteDefines(CSHARP_PATH, csDefines);
+        WriteDefines(CSHARP_PATH, csDefines);
 		GUILayout.EndVertical ();
 
 		if (oldSelection != selection) {
