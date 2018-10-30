@@ -12,6 +12,8 @@ using UnityEngine.Assertions;
 using UnityEngine.XR.iOS;
 #endif
 
+using UnityEngine.XR.ARFoundation;
+
 enum TriggerAxis
 {
 	X,
@@ -228,6 +230,10 @@ public class Portal : MonoBehaviour
 			component.enabled = true;
 		}
 		#endif
+
+        if (mainCamera.GetComponent<ARCameraBackground>()) {
+            ARCameraBackground component = renderCam.gameObject.AddComponent<ARCameraBackground>();
+        }
 	}
 
 	private void RenderPortal (Camera camera)
