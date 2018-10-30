@@ -12,7 +12,9 @@ using UnityEngine.Assertions;
 using UnityEngine.XR.iOS;
 #endif
 
+#if USES_AR_FOUNDATION
 using UnityEngine.XR.ARFoundation;
+#endif
 
 enum TriggerAxis
 {
@@ -81,23 +83,25 @@ public class Portal : MonoBehaviour
     private float portalSwitchDistance = 0.03f;
 
 	void Awake() {
-		#if USES_STEAM_VR
+#if USES_STEAM_VR
 		Debug.Log("This build is set up to run with Steam VR (Vive / Rift). To enable another headset or run without VR please edit your settings in Window -> Portal State Manager.");
-		#elif USES_OPEN_VR
+#elif USES_OPEN_VR
 		Debug.Log("This build is set up to run with Open VR (Rift / Gear VR). To enable another headset or run without VR please edit your settings in Window -> Portal State Manager.");
-		#elif USES_AR_KIT
-		Debug.Log("This build is set up to with ARKit. Please make sure to also import the Unity ARKit Plugin from the Asset Store.");
-		#elif USES_AR_CORE
-		Debug.Log("This build is set up to with ARCore. Please make sure to follow the instructions here : https://developers.google.com/ar/develop/unity/quickstart to get your environment set up for ARCore.");
-		#else
-		Debug.Log("This build is set up to run without VR or ARKit. To enable VR / AR support please edit your settings in Window -> Portal State Manager.");
-		#endif
+#elif USES_AR_KIT
+		Debug.Log("This build is set up to run with the ARKit plugin. Please make sure to also import the Unity ARKit Plugin from the Asset Store. This method is no longer supported and I recommend using ARFoundation instead.");
+#elif USES_AR_CORE
+		Debug.Log("This build is set up to run with ARCore. Please make sure to follow the instructions here : https://developers.google.com/ar/develop/unity/quickstart to get your environment set up for ARCore. This method is no longer supported and I recommend using ARFoundation instead.");
+#elif USES_AR_FOUNDATION
+		Debug.Log("This build is set up to function with ARFoundation, the recommended method for ARKit and ARCore support.");
+#else
+        Debug.Log("This build is set up to run without VR or ARKit. To enable VR / AR support please edit your settings in Window -> Portal State Manager.");
+#endif
 
-        #if USES_OPEN_VR
+#if USES_OPEN_VR
         Shader.SetGlobalInt("OpenVRRender", 1);
-        #else
+#else
         Shader.SetGlobalInt("OpenVRRender", 0);
-        #endif
+#endif
     }
 
     // Use this for initialization
@@ -145,11 +149,11 @@ public class Portal : MonoBehaviour
 		if (leftTexture != null) {
 			Destroy (leftTexture);
 		}
-		#if USES_STEAM_VR || USES_OPEN_VR
+#if USES_STEAM_VR || USES_OPEN_VR
 		if (rightTexture != null) {
 			Destroy (rightTexture);
 		}
-		#endif
+#endif
 	}
 
 	/// <summary>
@@ -209,16 +213,16 @@ public class Portal : MonoBehaviour
 	}
 
 	private void SetupRenderCameraForAR() {
-		#if USES_AR_KIT
+#if USES_AR_KIT
 		if (mainCamera.GetComponent<UnityARVideo> ()) {
 		renderCam.clearFlags = CameraClearFlags.SolidColor;
 		ARKitCameraRender component = renderCam.gameObject.AddComponent<ARKitCameraRender> ();
 		component.m_ClearMaterial = mainCamera.GetComponent<UnityARVideo> ().m_ClearMaterial;
 		}
-		#endif
+#endif
 
 
-		#if USES_AR_CORE
+#if USES_AR_CORE
 		if (mainCamera.GetComponent<GoogleARCore.ARCoreBackgroundRenderer> ()) {
 			renderCam.clearFlags = CameraClearFlags.SolidColor;
 			GoogleARCore.ARCoreBackgroundRenderer component = renderCam.gameObject.AddComponent<GoogleARCore.ARCoreBackgroundRenderer> ();
@@ -229,11 +233,13 @@ public class Portal : MonoBehaviour
 			component.enabled = false;
 			component.enabled = true;
 		}
-		#endif
+#endif
 
+#if USES_AR_FOUNDATION
         if (mainCamera.GetComponent<ARCameraBackground>()) {
             ARCameraBackground component = renderCam.gameObject.AddComponent<ARCameraBackground>();
         }
+#endif
 	}
 
 	private void RenderPortal (Camera camera)

@@ -2,11 +2,16 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+#if USES_AR_FOUNDATION
 using UnityEngine.XR.ARFoundation;
+#endif
 
 public class ARFoundationPlacement : MonoBehaviour
 {
+
+#if USES_AR_FOUNDATION
     public ARSessionOrigin sessionOrigin;
+#endif
 
     // Use this for initialization
     void Start()
@@ -16,6 +21,7 @@ public class ARFoundationPlacement : MonoBehaviour
 
     // Update is called once per frame
     void Update() {
+#if USES_AR_FOUNDATION
         if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began) {
             print("SCREEN TOUCHED!");
             List<ARRaycastHit> results = new List<ARRaycastHit>();
@@ -27,5 +33,6 @@ public class ARFoundationPlacement : MonoBehaviour
                 this.gameObject.transform.position = hit.pose.position;
             }
         }
+#endif
     }
 }
