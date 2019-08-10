@@ -31,10 +31,10 @@ public class Portal : MonoBehaviour
 	[Tooltip("The \"To\" dimension for this portal.")]
 	public Dimension dimension2;
 
-    [Tooltip("Increase this value to increase quality. Lower this value to increase performance. Default is 1.")]
-    public float renderQuality = 1f;
+	[Tooltip("Increase this value to increase quality. Lower this value to increase performance. Default is 1.")]
+	public float renderQuality = 1f;
 
-    [Tooltip("The maximum distance at which the portal begins to deform away from the main camera to avoid clipping.")]
+	[Tooltip("The maximum distance at which the portal begins to deform away from the main camera to avoid clipping.")]
 	public float maximumDeformRange = 1f;
 
 	[Tooltip("The power with which the portal deforms away from the camera. If you see a flicker as you pass through, increase this variable.")]
@@ -58,10 +58,10 @@ public class Portal : MonoBehaviour
 		"Don't set the visible mask to Everything. Select each option you want to be always visible.";
 
 
-    private Camera mainCamera;
-    private Camera rightCamera;
+	private Camera mainCamera;
+	private Camera rightCamera;
 
-    private float minimumDeformRangeSquared;
+	private float minimumDeformRangeSquared;
 	private bool isDeforming = false;
 
 	private Renderer meshRenderer;
@@ -70,7 +70,7 @@ public class Portal : MonoBehaviour
 
 	private bool triggerZDirection;
 
-	private List<PortalTransitionObject> transitionObjects = new List<PortalTransitionObject> ();
+	private List<PortalTransitionObject> transitionObjects = new List<PortalTransitionObject>();
 
 	// Rendering & VR Support
 	private Camera renderCam;
@@ -80,9 +80,10 @@ public class Portal : MonoBehaviour
 	private RenderTexture rightTexture;
 #endif
 
-    private float portalSwitchDistance = 0.03f;
+	private float portalSwitchDistance = 0.03f;
 
-	void Awake() {
+	void Awake()
+	{
 #if USES_STEAM_VR
 		Debug.Log("This build is set up to run with Steam VR (Vive / Rift). To enable another headset or run without VR please edit your settings in Window -> Portal State Manager.");
 #elif USES_OPEN_VR
@@ -94,47 +95,53 @@ public class Portal : MonoBehaviour
 #elif USES_AR_FOUNDATION
 		Debug.Log("This build is set up to function with ARFoundation, the recommended method for ARKit and ARCore support.");
 #else
-        Debug.Log("This build is set up to run without VR or ARKit. To enable VR / AR support please edit your settings in Window -> Portal State Manager.");
+		Debug.Log("This build is set up to run without VR or ARKit. To enable VR / AR support please edit your settings in Window -> Portal State Manager.");
 #endif
 
 #if USES_OPEN_VR
         Shader.SetGlobalInt("OpenVRRender", 1);
 #else
-        Shader.SetGlobalInt("OpenVRRender", 0);
+		Shader.SetGlobalInt("OpenVRRender", 0);
 #endif
-    }
+	}
 
-    // Use this for initialization
-    void Start () {
-		meshRenderer = GetComponent<Renderer> ();
-		meshFilter = GetComponent<MeshFilter> ();
-		meshDeformer = GetComponent<MeshDeformer> ();
+	// Use this for initialization
+	private void Start()
+	{
+		meshRenderer = GetComponent<Renderer>();
+		meshFilter = GetComponent<MeshFilter>();
+		meshDeformer = GetComponent<MeshDeformer>();
 
+		dimension1.connectedPortals.Add(this);
+		dimension2.connectedPortals.Add(this);
+
+		dimension1.showChildrenWithTag(this.ignoreRigidbodyTag);
+		dimension2.showChildrenWithTag(this.ignoreRigidbodyTag);
+
+		minimumDeformRangeSquared = maximumDeformRange * maximumDeformRange;
+		InitializeCamera();
+	}
+
+	protected virtual void InitializeCamera()
+	{
 #if USES_OPEN_VR
         OVRCameraRig rig = GameObject.FindObjectOfType<OVRCameraRig>();
         Assert.IsNotNull(rig, "To use Open VR Portal mode you need to have an OVRCameraRig in your scene.");
-        this.mainCamera = rig.leftEyeCamera;
-        this.rightCamera = rig.rightEyeCamera;
+        mainCamera = rig.leftEyeCamera;
+        rightCamera = rig.rightEyeCamera;
 #else
-        this.mainCamera = Camera.main;
+		mainCamera = Camera.main;
 #endif
-        Assert.IsNotNull(this.mainCamera, "Pocket Portal could not find a main camera in your scene.");
+		Assert.IsNotNull(mainCamera, "Pocket Portal could not find a main camera in your scene.");
 
-        this.gameObject.layer = FromDimension ().layer;
+		gameObject.layer = FromDimension().layer;
 
-		dimension1.connectedPortals.Add (this);
-		dimension2.connectedPortals.Add (this);
-
-        dimension1.showChildrenWithTag(this.ignoreRigidbodyTag);
-        dimension2.showChildrenWithTag(this.ignoreRigidbodyTag);
-
-		minimumDeformRangeSquared = maximumDeformRange * maximumDeformRange;
-
-		Vector3 convertedPoint = transform.InverseTransformPoint (mainCamera.transform.position);
+		Vector3 convertedPoint = transform.InverseTransformPoint(mainCamera.transform.position);
 		triggerZDirection = (convertedPoint.z > 0);
 
-        if (!mainCamera.GetComponent<MainCameraLayerManager> ()) {
-			mainCamera.gameObject.AddComponent<MainCameraLayerManager> ();  // this allows us to alter layers before / after a render!
+		if (!mainCamera.GetComponent<MainCameraLayerManager>())
+		{
+			mainCamera.gameObject.AddComponent<MainCameraLayerManager>();  // this allows us to alter layers before / after a render!
 		}
 	}
 
@@ -146,8 +153,9 @@ public class Portal : MonoBehaviour
 			renderCam = null;
 		}
 
-		if (leftTexture != null) {
-			Destroy (leftTexture);
+		if (leftTexture != null)
+		{
+			Destroy(leftTexture);
 		}
 #if USES_STEAM_VR || USES_OPEN_VR
 		if (rightTexture != null) {
@@ -159,60 +167,71 @@ public class Portal : MonoBehaviour
 	/// <summary>
 	///  Call this method to instantly switch between dimensions. This will switch the Main Character (IE: the main camera) as well.
 	/// </summary>
-	public void SwitchDimensions ()
+	public void SwitchDimensions()
 	{
-		DimensionChanger.SwitchCameraRender (this.mainCamera, FromDimension ().layer, ToDimension ().layer, ToDimension ().customSkybox);
-		DimensionChanger.SwitchDimensions (this.mainCamera.gameObject, FromDimension (), ToDimension ());
+		DimensionChanger.SwitchCameraRender(this.mainCamera, FromDimension().layer, ToDimension().layer, ToDimension().customSkybox);
+		DimensionChanger.SwitchDimensions(this.mainCamera.gameObject, FromDimension(), ToDimension());
 
-        if (this.rightCamera != null) {
-            DimensionChanger.SwitchCameraRender(this.rightCamera, FromDimension().layer, ToDimension().layer, ToDimension().customSkybox);
-            DimensionChanger.SwitchDimensions(this.rightCamera.gameObject, FromDimension(), ToDimension());
-        }
+		if (this.rightCamera != null)
+		{
+			DimensionChanger.SwitchCameraRender(this.rightCamera, FromDimension().layer, ToDimension().layer, ToDimension().customSkybox);
+			DimensionChanger.SwitchDimensions(this.rightCamera.gameObject, FromDimension(), ToDimension());
+		}
 
-        ToDimension ().SwitchConnectingPortals ();
+		ToDimension().SwitchConnectingPortals();
 	}
 
 	// ---------------------------------
 	// Rendering and Display
 	// ---------------------------------
 
-	void OnWillRenderObject () {
+	void OnWillRenderObject()
+	{
+		if (mainCamera == null)
+			return;
+
 		// Create the textures and camera if they don't exist.
-		if (!leftTexture) {
-			Vector2 texSize = new Vector2 (mainCamera.pixelWidth, mainCamera.pixelHeight);
-			leftTexture = new RenderTexture ((int)(texSize.x * renderQuality), (int)(texSize.y * renderQuality), 16);
+		if (!leftTexture)
+		{
+			Vector2 texSize = new Vector2(mainCamera.pixelWidth, mainCamera.pixelHeight);
+			leftTexture = new RenderTexture((int)(texSize.x * renderQuality), (int)(texSize.y * renderQuality), 16);
 #if USES_STEAM_VR || USES_OPEN_VR
 			rightTexture = new RenderTexture ((int)(texSize.x * renderQuality), (int)(texSize.y * renderQuality), 16);
 #endif
-			renderCam = new GameObject (gameObject.name + " render camera", typeof(Camera), typeof(Skybox)).GetComponent<Camera> ();
+			renderCam = new GameObject(gameObject.name + " render camera", typeof(Camera), typeof(Skybox)).GetComponent<Camera>();
 
-			SetupRenderCameraForAR ();  // this will get the camera ready to render for ARKit or ARCore
+			SetupRenderCameraForAR();  // this will get the camera ready to render for ARKit or ARCore
 
 			renderCam.name = gameObject.name + " render camera";
 			renderCam.tag = "Untagged";
 
-			if (renderCam.GetComponent<Skybox> ()) {
-				camSkybox = renderCam.GetComponent<Skybox> ();	
-			} else {
-				renderCam.gameObject.AddComponent<Skybox> ();
-				camSkybox = renderCam.GetComponent<Skybox> ();	
+			if (renderCam.GetComponent<Skybox>())
+			{
+				camSkybox = renderCam.GetComponent<Skybox>();
+			}
+			else
+			{
+				renderCam.gameObject.AddComponent<Skybox>();
+				camSkybox = renderCam.GetComponent<Skybox>();
 			}
 
-			CameraExtensions.ClearCameraComponents (renderCam.GetComponent<Camera>());
+			CameraExtensions.ClearCameraComponents(renderCam.GetComponent<Camera>());
 
 			renderCam.hideFlags = HideFlags.HideInHierarchy;
 			renderCam.enabled = false;
 		}
 
-		if (ToDimension ().customSkybox) {
-			camSkybox.material = ToDimension ().customSkybox;
+		if (ToDimension().customSkybox)
+		{
+			camSkybox.material = ToDimension().customSkybox;
 		}
 
-		meshRenderer.material.SetFloat ("_RecursiveRender", (gameObject.layer != Camera.current.gameObject.layer) ? 1 : 0);
-		RenderPortal (Camera.current);
+		meshRenderer.material.SetFloat("_RecursiveRender", (gameObject.layer != Camera.current.gameObject.layer) ? 1 : 0);
+		RenderPortal(Camera.current);
 	}
 
-	private void SetupRenderCameraForAR() {
+	private void SetupRenderCameraForAR()
+	{
 #if USES_AR_KIT
 		if (mainCamera.GetComponent<UnityARVideo> ()) {
 		renderCam.clearFlags = CameraClearFlags.SolidColor;
@@ -242,18 +261,19 @@ public class Portal : MonoBehaviour
 #endif
 	}
 
-	private void RenderPortal (Camera camera)
+	private void RenderPortal(Camera camera)
 	{
 #if UNITY_EDITOR
 		if (camera.name == "SceneCamera")
 			return;
 #endif
 
-		if (!this.enableObliqueProjection) {
+		if (!this.enableObliqueProjection)
+		{
 			Vector3 deltaTransform = transform.position - camera.transform.position;
-			renderCam.nearClipPlane = Mathf.Max (deltaTransform.magnitude - meshRenderer.bounds.size.magnitude, 0.01f);
+			renderCam.nearClipPlane = Mathf.Max(deltaTransform.magnitude - meshRenderer.bounds.size.magnitude, 0.01f);
 		}
-			
+
 #if USES_STEAM_VR || USES_OPEN_VR
 		if (camera.stereoEnabled) {  // IE: If we're in VR
 
@@ -271,12 +291,13 @@ public class Portal : MonoBehaviour
 			this.RenderMono (camera);
 		}
 #else
-	this.RenderMono (camera);   // We force mono in things like ARKit & Hololens
+		this.RenderMono(camera);   // We force mono in things like ARKit & Hololens
 #endif
 
 	}
 
-	private void RenderSteamVR(Camera camera) {
+	private void RenderSteamVR(Camera camera)
+	{
 #if USES_STEAM_VR
 		if (camera.stereoTargetEye == StereoTargetEyeMask.Both || camera.stereoTargetEye == StereoTargetEyeMask.Left) {
 			Vector3 eyePos = camera.transform.TransformPoint (SteamVR.instance.eyes [0].pos);
@@ -300,7 +321,8 @@ public class Portal : MonoBehaviour
 #endif
 	}
 
-	private void RenderOpenVR(Camera camera) {
+	private void RenderOpenVR(Camera camera)
+	{
 #if USES_OPEN_VR
         Transform trackingSpace = GameObject.FindObjectOfType<OVRCameraRig>().trackingSpace;
 
@@ -318,29 +340,32 @@ public class Portal : MonoBehaviour
 #endif
 	}
 
-	private void RenderMono(Camera camera) {
+	private void RenderMono(Camera camera)
+	{
 		RenderTexture target = leftTexture;
-		RenderPlane (renderCam, target, camera.transform.position, camera.transform.rotation, camera.projectionMatrix);
+		RenderPlane(renderCam, target, camera.transform.position, camera.transform.rotation, camera.projectionMatrix);
 
-		meshRenderer.material.SetTexture ("_LeftTex", target);
-		meshRenderer.material.SetFloat ("_RecursiveRender", 1);  // Using Recursive render here will force the shader to only read from the LeftTex texture
+		meshRenderer.material.SetTexture("_LeftTex", target);
+		meshRenderer.material.SetFloat("_RecursiveRender", 1);  // Using Recursive render here will force the shader to only read from the LeftTex texture
 	}
 
-	protected void RenderPlane (Camera portalCamera, RenderTexture targetTexture, Vector3 camPosition, Quaternion camRotation, Matrix4x4 camProjectionMatrix) {
+	protected void RenderPlane(Camera portalCamera, RenderTexture targetTexture, Vector3 camPosition, Quaternion camRotation, Matrix4x4 camProjectionMatrix)
+	{
 		// Copy camera position/rotation/projection data into the reflectionCamera
 		portalCamera.transform.position = camPosition;
 		portalCamera.transform.rotation = camRotation;
 		portalCamera.targetTexture = targetTexture;
-		portalCamera.ResetWorldToCameraMatrix ();
+		portalCamera.ResetWorldToCameraMatrix();
 
 		// Change the project matrix to use oblique culling (only show things BEHIND the portal)
 		Vector3 pos = transform.position;
 		Vector3 normal = transform.forward;
-        bool isForward = transform.InverseTransformPoint (portalCamera.transform.position).z < 0;
-		Vector4 clipPlane = CameraSpacePlane( portalCamera, pos, normal, isForward ? 1.0f : -1.0f );
+		bool isForward = transform.InverseTransformPoint(portalCamera.transform.position).z < 0;
+		Vector4 clipPlane = CameraSpacePlane(portalCamera, pos, normal, isForward ? 1.0f : -1.0f);
 		Matrix4x4 projection = camProjectionMatrix;
-		if (this.enableObliqueProjection) {
-			CalculateObliqueMatrix (ref projection, clipPlane);
+		if (this.enableObliqueProjection)
+		{
+			CalculateObliqueMatrix(ref projection, clipPlane);
 		}
 		portalCamera.projectionMatrix = projection;
 
@@ -348,8 +373,8 @@ public class Portal : MonoBehaviour
 		portalCamera.enabled = false;
 		portalCamera.cullingMask = 0;
 
-		CameraExtensions.LayerCullingShow (portalCamera, ToDimension ().layer);
-		CameraExtensions.LayerCullingShowMask (portalCamera, alwaysVisibleMask);
+		CameraExtensions.LayerCullingShow(portalCamera, ToDimension().layer);
+		CameraExtensions.LayerCullingShowMask(portalCamera, alwaysVisibleMask);
 
 		// Update values that are used to generate the Skybox and whatnot.
 		portalCamera.farClipPlane = mainCamera.farClipPlane;
@@ -359,20 +384,21 @@ public class Portal : MonoBehaviour
 		portalCamera.aspect = mainCamera.aspect;
 		portalCamera.orthographicSize = mainCamera.orthographicSize;
 
-		portalCamera.Render ();
+		portalCamera.Render();
 
 		portalCamera.targetTexture = null;
 	}
 
 	// Creates a clip plane for the projection matrix that clips to the portal.
-	private static void CalculateObliqueMatrix (ref Matrix4x4 projection, Vector4 clipPlane) {
+	private static void CalculateObliqueMatrix(ref Matrix4x4 projection, Vector4 clipPlane)
+	{
 		Vector4 q = projection.inverse * new Vector4(
 			sgn(clipPlane.x),
 			sgn(clipPlane.y),
 			1.0f,
 			1.0f
 		);
-		Vector4 c = clipPlane * (2.0F / (Vector4.Dot (clipPlane, q)));
+		Vector4 c = clipPlane * (2.0F / (Vector4.Dot(clipPlane, q)));
 
 		// third row = clip plane - fourth row
 		projection[2] = c.x - projection[3];
@@ -382,16 +408,18 @@ public class Portal : MonoBehaviour
 	}
 
 	// Given position/normal of the plane, calculates plane in camera space.
-	private Vector4 CameraSpacePlane (Camera cam, Vector3 pos, Vector3 normal, float sideSign) {
-        Vector3 offsetPos = pos + normal * portalSwitchDistance * (triggerZDirection ? -1 : 1);
+	private Vector4 CameraSpacePlane(Camera cam, Vector3 pos, Vector3 normal, float sideSign)
+	{
+		Vector3 offsetPos = pos + normal * portalSwitchDistance * (triggerZDirection ? -1 : 1);
 		Matrix4x4 m = cam.worldToCameraMatrix;
-		Vector3 cpos = m.MultiplyPoint( offsetPos );
-		Vector3 cnormal = m.MultiplyVector( normal ).normalized * sideSign;
-		return new Vector4( cnormal.x, cnormal.y, cnormal.z, -Vector3.Dot(cpos,cnormal) );
+		Vector3 cpos = m.MultiplyPoint(offsetPos);
+		Vector3 cnormal = m.MultiplyVector(normal).normalized * sideSign;
+		return new Vector4(cnormal.x, cnormal.y, cnormal.z, -Vector3.Dot(cpos, cnormal));
 	}
 
 	// Extended sign: returns -1, 0 or 1 based on sign of a
-	private static float sgn(float a) {
+	private static float sgn(float a)
+	{
 		if (a > 0.0f) return 1.0f;
 		if (a < 0.0f) return -1.0f;
 		return 0.0f;
@@ -426,118 +454,149 @@ public class Portal : MonoBehaviour
 	// Portal Dimension Switching and Deformation
 	// ---------------------------------
 
-	void Update ()
+	void Update()
 	{
-		if (mainCamera.gameObject.layer != this.FromDimension ().layer) {
+		if (mainCamera == null)
+			return;
+
+		if (mainCamera.gameObject.layer != this.FromDimension().layer)
+		{
 			return;  // don't transition if we are in different worlds.
 		}
 
 		Vector3 portalSize = meshFilter.mesh.bounds.size;
-		bool shouldDeform = 
-			(Mathf.Pow (transform.InverseTransformDirection (mainCamera.transform.position - this.transform.position).z, 2) <= minimumDeformRangeSquared) && // z direction is close
-			Mathf.Abs (transform.InverseTransformDirection (mainCamera.transform.position - this.transform.position).x) <= (portalSize.x * transform.lossyScale.x) / 2f &&
-			Mathf.Abs (transform.InverseTransformDirection (mainCamera.transform.position - this.transform.position).y) <= (portalSize.y * transform.lossyScale.y) / 2f;
+		bool shouldDeform =
+			(Mathf.Pow(transform.InverseTransformDirection(mainCamera.transform.position - this.transform.position).z, 2) <= minimumDeformRangeSquared) && // z direction is close
+			Mathf.Abs(transform.InverseTransformDirection(mainCamera.transform.position - this.transform.position).x) <= (portalSize.x * transform.lossyScale.x) / 2f &&
+			Mathf.Abs(transform.InverseTransformDirection(mainCamera.transform.position - this.transform.position).y) <= (portalSize.y * transform.lossyScale.y) / 2f;
 
-		if (shouldDeform) {
-			DeformPortalWithTransform (mainCamera.transform);
-		} else if (isDeforming) {
+		if (shouldDeform)
+		{
+			DeformPortalWithTransform(mainCamera.transform);
+		}
+		else if (isDeforming)
+		{
 			isDeforming = false;
-			meshDeformer.ClearDeformingForce ();
+			meshDeformer.ClearDeformingForce();
 		}
 
-        CheckForTransitionObjects();
-    }
+		CheckForTransitionObjects();
+	}
 
-	private void DeformPortalWithTransform (Transform otherTransform)
+	private void DeformPortalWithTransform(Transform otherTransform)
 	{
 		Vector3 convertedPoint = transform.InverseTransformPoint(otherTransform.position);
 
-		if ((convertedPoint.z > 0) != triggerZDirection && Mathf.Abs(convertedPoint.z) > portalSwitchDistance) {
+		if ((convertedPoint.z > 0) != triggerZDirection && Mathf.Abs(convertedPoint.z) > portalSwitchDistance)
+		{
 			triggerZDirection = (convertedPoint.z > 0);
-			if (isDeforming) {  // if we're not deforming before this, the user could have walked AROUND the portal.
-				SwitchDimensions ();
+			if (isDeforming)
+			{  // if we're not deforming before this, the user could have walked AROUND the portal.
+				SwitchDimensions();
 			}
 		}
 
-		meshDeformer.AddDeformingForce (otherTransform.position, deformPower, triggerZDirection);
+		meshDeformer.AddDeformingForce(otherTransform.position, deformPower, triggerZDirection);
 		isDeforming = true;
 	}
 
-	public void SwitchPortalDimensions ()
+	public void SwitchPortalDimensions()
 	{
 		dimensionSwitched = !dimensionSwitched;
-		gameObject.layer = FromDimension ().layer;
+		gameObject.layer = FromDimension().layer;
 	}
 
-    // -----------------------------------------------
-    // Moving other objects through the portal
-    // -----------------------------------------------
+	// -----------------------------------------------
+	// Moving other objects through the portal
+	// -----------------------------------------------
 
-    void CheckForTransitionObjects() {
-        Vector3 portalSize = meshFilter.mesh.bounds.size;
-        PortalTransitionObject[] objects = FindObjectsOfType<PortalTransitionObject>();
-        foreach(PortalTransitionObject obj in objects) {
-            bool shouldDeform =
-                (Mathf.Pow(transform.InverseTransformDirection(obj.transform.position - this.transform.position).z, 2) <= minimumDeformRangeSquared) && // z direction is close
-                Mathf.Abs(transform.InverseTransformDirection(obj.transform.position - this.transform.position).x) <= (portalSize.x * transform.lossyScale.x) / 2f &&
-                Mathf.Abs(transform.InverseTransformDirection(obj.transform.position - this.transform.position).y) <= (portalSize.y * transform.lossyScale.y) / 2f;
+	void CheckForTransitionObjects()
+	{
+		Vector3 portalSize = meshFilter.mesh.bounds.size;
+		PortalTransitionObject[] objects = FindObjectsOfType<PortalTransitionObject>();
+		foreach (PortalTransitionObject obj in objects)
+		{
+			bool shouldDeform =
+				(Mathf.Pow(transform.InverseTransformDirection(obj.transform.position - this.transform.position).z, 2) <= minimumDeformRangeSquared) && // z direction is close
+				Mathf.Abs(transform.InverseTransformDirection(obj.transform.position - this.transform.position).x) <= (portalSize.x * transform.lossyScale.x) / 2f &&
+				Mathf.Abs(transform.InverseTransformDirection(obj.transform.position - this.transform.position).y) <= (portalSize.y * transform.lossyScale.y) / 2f;
 
-            if (shouldDeform) {
-                HandleTransition(obj);
-            } else {
-                if (this.transitionObjects.Contains(obj)) {
-                    this.transitionObjects.Remove(obj);
-                    if (this.transitionObjects.Count == 0 && !isDeforming) {
-                        meshDeformer.ClearDeformingForce();
-                    }
-                }
-            }
-        }
-    }
+			if (shouldDeform)
+			{
+				HandleTransition(obj);
+			}
+			else
+			{
+				if (this.transitionObjects.Contains(obj))
+				{
+					this.transitionObjects.Remove(obj);
+					if (this.transitionObjects.Count == 0 && !isDeforming)
+					{
+						meshDeformer.ClearDeformingForce();
+					}
+				}
+			}
+		}
+	}
 
-    void HandleTransition(PortalTransitionObject transitionObject) {
-        if (!this.transitionObjects.Contains(transitionObject)) {
-            if (CameraExtensions.CameraForObject(transitionObject.gameObject) != mainCamera && (ignoreRigidbodyTag == "" || !transitionObject.gameObject.CompareTag(ignoreRigidbodyTag))) {
-                transitionObject.triggerZDirection = (transform.InverseTransformPoint(transitionObject.transform.position).z > 0);
-                this.transitionObjects.Add(transitionObject);
-            }
-        }
+	void HandleTransition(PortalTransitionObject transitionObject)
+	{
+		if (!this.transitionObjects.Contains(transitionObject))
+		{
+			if (CameraExtensions.CameraForObject(transitionObject.gameObject) != mainCamera && (ignoreRigidbodyTag == "" || !transitionObject.gameObject.CompareTag(ignoreRigidbodyTag)))
+			{
+				transitionObject.triggerZDirection = (transform.InverseTransformPoint(transitionObject.transform.position).z > 0);
+				this.transitionObjects.Add(transitionObject);
+			}
+		}
 
-        Vector3 convertedPoint = transform.InverseTransformPoint(transitionObject.transform.position);
-        if ((convertedPoint.z > 0) != transitionObject.triggerZDirection) {
-            if (transitionObject.gameObject.layer == FromDimension().layer) {
-                DimensionChanger.SwitchDimensions(transitionObject.gameObject, FromDimension(), ToDimension());
-            } else {
-                DimensionChanger.SwitchDimensions(transitionObject.gameObject, ToDimension(), FromDimension());
-            }
-            transitionObject.triggerZDirection = !transitionObject.triggerZDirection;
-        }
+		Vector3 convertedPoint = transform.InverseTransformPoint(transitionObject.transform.position);
+		if ((convertedPoint.z > 0) != transitionObject.triggerZDirection)
+		{
+			if (transitionObject.gameObject.layer == FromDimension().layer)
+			{
+				DimensionChanger.SwitchDimensions(transitionObject.gameObject, FromDimension(), ToDimension());
+			}
+			else
+			{
+				DimensionChanger.SwitchDimensions(transitionObject.gameObject, ToDimension(), FromDimension());
+			}
+			transitionObject.triggerZDirection = !transitionObject.triggerZDirection;
+		}
 
-        if (!isDeforming) { // Only deform if the main camera isn't deforming.
-            Vector3 transformPosition = transitionObject.transform.position;
-            if (Mathf.Abs(convertedPoint.z) < maximumDeformRange) {
-                convertedPoint.z += triggerZDirection ? maximumDeformRange : -maximumDeformRange;
-                transformPosition = transform.TransformPoint(convertedPoint);
-            }
-            meshDeformer.AddDeformingForce(transformPosition, deformPower);
-        }
-    }
+		if (!isDeforming)
+		{ // Only deform if the main camera isn't deforming.
+			Vector3 transformPosition = transitionObject.transform.position;
+			if (Mathf.Abs(convertedPoint.z) < maximumDeformRange)
+			{
+				convertedPoint.z += triggerZDirection ? maximumDeformRange : -maximumDeformRange;
+				transformPosition = transform.TransformPoint(convertedPoint);
+			}
+			meshDeformer.AddDeformingForce(transformPosition, deformPower);
+		}
+	}
 
 	/* Convenience */
-	public Dimension ToDimension ()
+	public Dimension ToDimension()
 	{
-		if (dimensionSwitched) {
+		if (dimensionSwitched)
+		{
 			return dimension1;
-		} else {
+		}
+		else
+		{
 			return dimension2;
 		}
 	}
 
-	public Dimension FromDimension ()
+	public Dimension FromDimension()
 	{
-		if (dimensionSwitched) {
+		if (dimensionSwitched)
+		{
 			return dimension2;
-		} else {
+		}
+		else
+		{
 			return dimension1;
 		}
 	}
